@@ -13,9 +13,9 @@ var jimp = require("jimp");
 var path = require("path");
 
 var config = require("./config");
-var base_dir = path.join(path.dirname(process.execPath), config.storage.base_dir);
+var base_dir = path.join(__dirname, "/../" + config.storage.base_dir);
 var default_avatar = path.join(__dirname, "/assets/avatar.png");
-var avatars_dir = path.join(path.dirname(process.execPath), config.storage.avatars_dir);
+var avatars_dir = path.join(__dirname, "/../" + config.storage.avatars_dir);
 
 function readSizeRecursive(item, total) {
   return fs.lstat(item)

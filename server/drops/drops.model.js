@@ -16,14 +16,14 @@ var utils = require("../utils");
 
 const Drops = database.define("drops", {
   path : {
-    type: Sequelize.STRING,
+    type: Sequelize.STRING(191),
     primaryKey : true
   },
-  createdUID : { type: Sequelize.STRING },
+  createdUID : { type: Sequelize.STRING(191) },
   createdDate : { type: Sequelize.DATE },
-  editUID : { type: Sequelize.STRING },
+  editUID : { type: Sequelize.STRING(191) },
   editDate : { type: Sequelize.DATE },
-  ownerUID : { type: Sequelize.STRING }
+  ownerUID : { type: Sequelize.STRING(191) }
 }, { timestamps: false });
 
 Drops.beforeDestroy((drop, options) => {

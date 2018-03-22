@@ -19,10 +19,10 @@ const cipher_algorithm = "aes-256-ctr";
 
 const RefreshTokens = database.define("refreshtokens", {
   token : {
-    type: Sequelize.STRING,
+    type: Sequelize.STRING(191),
     primaryKey : true
   },
-  uid : { type: Sequelize.STRING },
+  uid : { type: Sequelize.STRING(191) },
   issue_date : { type: Sequelize.DATE }
 }, {
   timestamps: false

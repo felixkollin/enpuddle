@@ -25,9 +25,10 @@ function handleconnection(socket){
   sessions[uid].push(socket);
 
   console.log("CONNECTED: " + uid);
-
   socket.join("user:" + uid);
+
   socket.on("observe_sub", path => {
+    console.log("SUB OBSERVE: " + path);
     socket.join("sub:" + path);
   });
 
@@ -129,6 +130,11 @@ module.exports = {
     });
     io_socket.to("sub:" + path).emit("sub_notice",
     {message: uid + " was refused permission to " + permission + " " + path});
+    //If it's a folder shared to user, it needs to know perms are modified
+    if(!path.startsWith(uid + "/")){
+      console.log("sharing modified for " + uid);
+      io_socket.to("user:" + uid).emit("sharing_modified", {path: path});
+    }
   },
   addedPermission : (path, uid, permission) => {
     console.log("Emit perm_added to " + path + ", uid: " + uid + ", perm: " + permission);
@@ -139,5 +145,10 @@ module.exports = {
     });
     io_socket.to("sub:" + path).emit("sub_notice",
     {message: uid + " was granted permission to " + permission + " " + path});
+    //If it's a folder shared to user, it needs to know perms are modified
+    if(!path.startsWith(uid + "/")){
+      console.log("sharing modified for " + uid);
+      io_socket.to("user:" + uid).emit("sharing_modified", {path: path});
+    }
   }
 };

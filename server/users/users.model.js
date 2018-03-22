@@ -16,12 +16,12 @@ var crypto = require("crypto");
 
 const Users = database.define("users", {
   uid : {
-    type: Sequelize.STRING,
+    type: Sequelize.STRING(191),
     primaryKey : true
   },
-  password : { type: Sequelize.STRING },
-  alias : { type: Sequelize.STRING },
-  bio : { type: Sequelize.STRING },
+  password : { type: Sequelize.STRING(191) },
+  alias : { type: Sequelize.STRING(191) },
+  bio : { type: Sequelize.STRING(191) },
   storageLimit : { type: Sequelize.INTEGER }
 }, {
   timestamps: false

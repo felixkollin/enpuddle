@@ -82,6 +82,49 @@ sharingRouter.get("/permission", (req, res, next) => {
 });
 
 /**
+ * @desc HTTP GET request to get the paths user has permission on. (excluding own)
+ *
+ * @param {String} req.query.access_token An access token.
+ * @param {String} req.query.permission read/write/modify/all.
+ *
+ * @return {status: 200, data: [{path, uid, permission}]} When successful.
+ * Otherwise: Send to error handler middleware.
+ */
+sharingRouter.get("/shared-permission", (req, res, next) => {
+  var permission = req.query.permission;
+  var access_token = req.query.access_token;
+
+  if(!permission || !access_token){
+    return next(new Error("incorrect_params"));
+  }
+
+  if(valid_permissions[permission] === undefined){
+    return next(new Error("incorrect_permission"));
+  }
+
+  var uid;
+  try {
+    uid = auth.validateAccessToken(access_token);
+  }catch(err) {
+    return next(err);
+  }
+
+  sharing.getSharedPermission(uid, permission).then(permList => {
+      var permissions = [];
+      permList.forEach(permission => {
+        permission = permission.get({
+          plain: true
+        });
+        if(!permission.path.startsWith(uid + "/")){
+          permissions.push(permission);
+        }
+      });
+      return res.json({data: permissions});
+    })
+    .catch(err => next(err));
+});
+
+/**
  * @desc HTTP POST request to grant a user permission/s to a drop.
  *
  * @param {String} req.body.path The path of the drop.

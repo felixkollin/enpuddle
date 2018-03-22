@@ -19,8 +19,8 @@ const Subscription = database.define("subscription", {
     primaryKey : true,
     autoIncrement: true
   },
-  uid : { type: Sequelize.STRING },
-  path : { type: Sequelize.STRING }
+  uid : { type: Sequelize.STRING(191) },
+  path : { type: Sequelize.STRING(191) }
 }, {timestamps: false, freezeTableName: true});
 
 Subscription.afterDestroy((sub, options) => {

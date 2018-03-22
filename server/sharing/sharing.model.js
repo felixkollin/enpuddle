@@ -20,9 +20,9 @@ const HasPermission = database.define("haspermission", {
     primaryKey : true,
     autoIncrement: true
   },
-  uid : { type: Sequelize.STRING },
-  path : { type: Sequelize.STRING },
-  permission : { type: Sequelize.STRING }
+  uid : { type: Sequelize.STRING(191) },
+  path : { type: Sequelize.STRING(191) },
+  permission : { type: Sequelize.STRING(191) }
 }, {
   timestamps: false,
   freezeTableName: true
@@ -116,6 +116,19 @@ module.exports = {
     }
     if(uid === undefined){
       delete query.where.uid;
+    }
+    return HasPermission.findAll(query);
+  },
+
+  getSharedPermission : (uid, permission) => {
+    var query = {
+      where : {
+        uid : uid,
+        permission : permission
+      }
+    };
+    if(permission === "all"){
+      delete query.where.permission;
     }
     return HasPermission.findAll(query);
   },
