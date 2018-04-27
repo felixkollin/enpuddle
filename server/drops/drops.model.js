@@ -12,7 +12,7 @@ const Sequelize = require("sequelize");
 
 var database = require("../database");
 var sockets = require("../sockets.ctrl");
-var utils = require("../utils");
+var follows = require("../follows/follows.model");
 
 const Drops = database.define("drops", {
   path : {
@@ -27,11 +27,11 @@ const Drops = database.define("drops", {
 }, { timestamps: false });
 
 Drops.beforeDestroy((drop, options) => {
+  follows.deletedDrop(drop.path);
   sockets.deletedDrop(drop.path);
-  sockets.modifiedDrop(utils.parseWorkingDir(drop.path));
 });
 Drops.beforeUpsert((drop, options) => {
-  sockets.modifiedDrop(utils.parseWorkingDir(drop.path));
+  sockets.addedDrop(drop.path);
 });
 
 //Hooks does not work on this raw query, that is why socket emits is not used
@@ -53,9 +53,9 @@ module.exports = {
         },
         type: database.QueryTypes.UPDATE
       }).then(() => {
-        sockets.modifiedDrop(utils.parseWorkingDir(old_path));
-        sockets.modifiedDrop(utils.parseWorkingDir(new_path));
         sockets.redefinedDrop(old_path, new_path);
+        follows.redefinedDrop(old_path, new_path);
+        //sharing.redefinedDrop(old_path, new_path); TODO circular
 
         //Emit subdrop changes to sockets
         module.exports.getSubDrops(old_path).then(dropList => {
@@ -77,8 +77,6 @@ module.exports = {
           path : old_path
         }
       }).then(() => {
-        sockets.modifiedDrop(utils.parseWorkingDir(old_path));
-        sockets.modifiedDrop(utils.parseWorkingDir(new_path));
         sockets.redefinedDrop(old_path, new_path);
         return Promise.resolve();
       });

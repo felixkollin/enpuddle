@@ -16,7 +16,7 @@ var auth = require("./auth.model");
 var users = require("../users/users.model");
 var drops = require("../drops/drops.model");
 var sharing = require("../sharing/sharing.model");
-var subs = require("../subs/subs.model");
+var follows = require("../follows/follows.model");
 var storage = require("../storage");
 var config = require("../config");
 
@@ -112,7 +112,7 @@ authRouter.post("/account", (req, res, next) => {
       return drops.addDrop(uid + "/", uid, uid);
     })
     .then(() => {
-      return sharing.setPermissions(uid, uid + "/", ["read", "write", "modify"]);
+      return sharing.setPermission(uid, uid + "/", "all");
     })
     .then(() => storage.mkdir(uid))
     .then(() => res.sendStatus(201))
@@ -151,16 +151,14 @@ authRouter.delete("/account", (req, res, next) => {
     })
     // Delete puddle
     .then(() => drops.deleteDrop(uid + "/"))
-    .then(() => subs.deletedDrop(uid + "/"))
     // Delete all permission entries with user
     .then(() => sharing.deleteAllUserPermissions(uid))
     // Delete in storage
     .then(() => storage.delete(uid + "/"))
-
     // Delete refresh tokens
     .then(() => auth.invalidateRefreshTokens(uid))
-    // Delete the user's subscriptions
-    .then(() => subs.deleteAllSubs(uid, undefined))
+    // Delete the follows records of user
+    .then(() => follows.deleteAllFollows(uid, undefined))
     .then(() => res.sendStatus(204))
     .catch(err => next(err));
 });

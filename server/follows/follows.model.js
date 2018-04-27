@@ -2,7 +2,7 @@
  * @file
  * @author Felix Kollin <felix.kollin@gmail.com>
  * @version 0.1
- * Model used to interact with the "subscription" table in the database.
+ * Model used to interact with the "follows" table in the database.
  *
  */
 
@@ -13,7 +13,7 @@ const Sequelize = require("sequelize");
 var database = require("../database");
 var sockets = require("../sockets.ctrl");
 
-const Subscription = database.define("subscription", {
+const Follows = database.define("follows", {
   id : {
     type: Sequelize.INTEGER,
     primaryKey : true,
@@ -21,21 +21,30 @@ const Subscription = database.define("subscription", {
   },
   uid : { type: Sequelize.STRING(191) },
   path : { type: Sequelize.STRING(191) }
-}, {timestamps: false, freezeTableName: true});
+}, {timestamps: false});
 
-Subscription.afterDestroy((sub, options) => {
-  sockets.deletedSub(sub.uid, sub.path);
+Follows.afterDestroy((follow, options) => {
+  sockets.deletedFollow(follow.uid, follow.path);
 });
-Subscription.afterCreate((sub, options) => {
-  sockets.addedSub(sub.uid, sub.path);
+Follows.afterCreate((follow, options) => {
+  sockets.addedFollow(follow.uid, follow.path);
 });
 
 module.exports = {
+  // Notify all that follows path with message
+  notifyAll : (path, message) => {
+    module.exports.getAllFollowing(path).then(list => {
+      list.forEach(follow => {
+        sockets.notification(follow.uid, message);
+      });
+    });
+  },
+
   redefinedDrop : (old_path, new_path) => {
     if(new_path.charAt(new_path.length - 1) === "/"){
       //Subdrops & main regex:
       var pathRegex = new RegExp(old_path + ".*").toString().slice(1, -1);
-      return database.query("UPDATE subscription SET path = REPLACE(path, :old_path, :new_path) WHERE (path REGEXP :pathRegex)", {
+      return database.query("UPDATE follows SET path = REPLACE(path, :old_path, :new_path) WHERE (path REGEXP :pathRegex)", {
         replacements: {
           old_path : old_path,
           new_path : new_path,
@@ -44,7 +53,7 @@ module.exports = {
         type: database.QueryTypes.UPDATE
       });
     }else{
-      return Subscription.update(
+      return Follows.update(
         { path : new_path },
         { where: {
           path : old_path
@@ -61,7 +70,7 @@ module.exports = {
       path = { $regexp: regex.toString().slice(1, -1)};
     }
 
-    return Subscription.destroy({
+    return Follows.destroy({
       where: {
         path : path
       },
@@ -69,15 +78,22 @@ module.exports = {
     });
   },
 
-  getAllSubs : (uid) => {
-    return Subscription.findAll({
+  getAllFollows : (uid) => {
+    return Follows.findAll({
   		where : {
   			uid : uid
   		}
     });
   },
+  getAllFollowing : (path) => {
+    return Follows.findAll({
+  		where : {
+  			path : path
+  		}
+    });
+  },
 
-  deleteAllSubs : (uid, path) => {
+  deleteAllFollows : (uid, path) => {
     var query = {
       uid : uid,
       path : path
@@ -88,14 +104,14 @@ module.exports = {
     if(path === undefined){
       delete query.path;
     }
-    return Subscription.destroy({
+    return Follows.destroy({
   		where : query,
       individualHooks: true
   	});
   },
 
-  deleteSub : (uid, path) => {
-    return Subscription.destroy({
+  deleteFollow : (uid, path) => {
+    return Follows.destroy({
   		where : {
         path : path,
   			uid : uid
@@ -104,8 +120,8 @@ module.exports = {
   	});
   },
 
-  addSub : (uid, path) => {
-    return Subscription.findOrCreate({
+  addFollow : (uid, path) => {
+    return Follows.findOrCreate({
       where: {
         uid: uid,
         path: path

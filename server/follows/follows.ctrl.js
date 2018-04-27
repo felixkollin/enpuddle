@@ -9,22 +9,22 @@
 "use strict";
 
 var express = require("express");
-var subsRouter = express.Router();
+var followsRouter = express.Router();
 
-var subs = require("./subs.model");
+var follows = require("./follows.model");
 var drops = require("../drops/drops.model");
 var auth = require("../auth/auth.model");
 var sharing = require("../sharing/sharing.model");
 
 /**
- * @desc HTTP GET request to list the paths the user is subscribed to.
+ * @desc HTTP GET request to list the paths the user is recieves notifications about.
  *
  * @param {String} req.body.access_token An access token.
  *
  * @return {status 200, data: [path]} When successful.
  * Otherwise: Send to error handler middleware.
  */
-subsRouter.get("/list", (req, res, next) => {
+followsRouter.get("/list", (req, res, next) => {
   var access_token = req.query.access_token;
   if(!access_token){
     return next(new Error("incorrect_params"));
@@ -37,7 +37,7 @@ subsRouter.get("/list", (req, res, next) => {
     return next(err);
   }
 
-  subs.getAllSubs(uid)
+  follows.getAllFollows(uid)
     .then(subList => {
       var list = [];
       subList.forEach(sub => {
@@ -58,7 +58,7 @@ subsRouter.get("/list", (req, res, next) => {
  * @return {status: 201} When successful.
  * Otherwise: Send to error handler middleware.
  */
- subsRouter.post("/sub", (req, res, next) => {
+followsRouter.post("/follow", (req, res, next) => {
    var access_token = req.body.access_token;
    var path = req.body.path;
    if(!access_token || !path){
@@ -84,7 +84,7 @@ subsRouter.get("/list", (req, res, next) => {
        if(result === null){
          throw Error("insufficient_permissions");
        }
-       return subs.addSub(uid, path);
+       return follows.addFollow(uid, path);
      })
      .then(() => res.sendStatus(201))
      .catch(err => next(err));
@@ -99,7 +99,7 @@ subsRouter.get("/list", (req, res, next) => {
  * @return {status: 204} When successful.
  * Otherwise: Send to error handler middleware.
  */
- subsRouter.delete("/sub", (req, res, next) => {
+followsRouter.delete("/follow", (req, res, next) => {
    var access_token = req.query.access_token;
    var path = req.query.path;
    if(!access_token || !path){
@@ -113,9 +113,9 @@ subsRouter.get("/list", (req, res, next) => {
      return next(err);
    }
 
-   subs.deleteSub(uid, path)
+   follows.deleteFollow(uid, path)
     .then(() => res.sendStatus(204))
     .catch(err => next(err));
  });
 
-module.exports = subsRouter;
+module.exports = followsRouter;

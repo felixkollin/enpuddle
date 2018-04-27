@@ -17,7 +17,6 @@ var drops = require("./drops.model");
 var users = require("../users/users.model");
 var auth = require("../auth/auth.model");
 var sharing = require("../sharing/sharing.model");
-var subs = require("../subs/subs.model");
 var storage = require("../storage");
 var utils = require("../utils");
 
@@ -312,7 +311,7 @@ dropsRouter.get("/download", (req, res, next) => {
 });
 
 /**
- * @desc HTTP PUT request to redefine a drop's path (use as move and rename).
+ * @desc HTTP PUT request to move a drop to a new directory.
  *
  * @param {String} req.body.path The path of the drop.
  * @param {String} req.body.new_path The new path of the drop.
@@ -321,34 +320,28 @@ dropsRouter.get("/download", (req, res, next) => {
  * @return {status: 204} When successful.
  * Otherwise: Send to error handler middleware.
  */
-dropsRouter.put("/redefine", (req, res, next) => {
+dropsRouter.put("/move", (req, res, next) => {
   var path = req.body.path;
   var access_token = req.body.access_token;
-  var new_path = req.body.new_path;
+  var new_dir = req.body.new_dir;
 
-  if(!access_token || !path || !new_path){
+  if(!access_token || !path || !new_dir){
     return next(new Error("incorrect_params"));
   }
 
-  //Sanatize each portion of new path, dont remove any /
-  var split = new_path.split("/");
-  split = split.map(part => sanitize(part, {replacement : "_"}));
-  new_path = split.join("/");
-
-  //If redefining dir, new path has to be dir as well (same with file)
-  var is_path_dir = (path.charAt(path.length - 1) === "/");
-  var is_new_dir = (new_path.charAt(new_path.length - 1) === "/");
-  if(is_path_dir !== is_new_dir){
-    return next(new Error("invalid_path"));
+  // Check so new dir is directory
+  if(new_dir.charAt(new_dir.length - 1) === "/"){
+    return next(new Error("invalid_dir"));
   }
-
   //Cannot move a directory inside itself
-  if(new_path.startsWith(path) && is_new_dir){
+  if(path.startsWith(new_dir)){
     return next(new Error("invalid_path"));
   }
 
-  var destination_dir = utils.parseWorkingDir(new_path);
   var source_dir = utils.parseWorkingDir(path);
+  var filename = utils.parseName(path);
+  var new_path = new_dir + filename;
+  var newOwnerUID = utils.getOwner(new_dir);
 
   var uid;
   try {
@@ -361,7 +354,7 @@ dropsRouter.put("/redefine", (req, res, next) => {
       if(result === null){
         throw Error("insufficient_permissions");
       }
-      return sharing.checkPermission(destination_dir, uid, "write");
+      return sharing.checkPermission(new_dir, uid, "write");
     })
     //Check so drop exists
     .then(result => {
@@ -378,35 +371,17 @@ dropsRouter.put("/redefine", (req, res, next) => {
       }
       return drops.getDrop(new_path);
     })
-    //Get working directory owner
     .then(result => {
       if(result !== null){
         throw Error("invalid_path");
       }
-      return drops.getDrop(destination_dir);
-    })
-
-    .then(working => {
-      if(working === null){
-        throw Error("invalid_path");
-      }
-      return drops.redefineDrop(path, new_path, uid, working.ownerUID);
-    })
-    .then(() => {
-      return sharing.redefinedDrop(path, new_path);
-    })
-    .then(() => {
-      return drops.getDrop(new_path);
+      return drops.redefineDrop(path, new_path, uid, newOwnerUID);
     })
     // Make sure the owner of the destination has all permissions
-    .then(newDrop => {
-      if(newDrop === null){
-        throw Error("creation_failed");
-      }
-      return sharing.setPermission(new_path, newDrop.ownerUID, "all");
+    .then(() => {
+      return sharing.setPermission(new_path, newOwnerUID, "all");
     })
     .then(() => storage.rename(path, new_path))
-    .then(() => subs.redefinedDrop(path, new_path))
     .then(() => res.sendStatus(204))
     .catch(err => next(err));
 });
@@ -623,9 +598,8 @@ dropsRouter.delete("/delete", (req, res, next) => {
       if(deletions === 0){
         throw Error("deletion_failed");
       }
-      return subs.deletedDrop(path);
+      return storage.delete(path);
     })
-    .then(() => storage.delete(path))
     .then(() => res.sendStatus(204))
     .catch(err => next(err));
 });

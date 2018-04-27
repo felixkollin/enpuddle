@@ -29,10 +29,10 @@ const HasPermission = database.define("haspermission", {
 });
 
 HasPermission.afterDestroy((permission, options) => {
-  sockets.deletedPermission(permission.path, permission.uid, permission.permission);
+  sockets.changedPermission(permission.path, permission.uid, permission.permission, "revoked");
 });
 HasPermission.afterCreate((permission, options) => {
-  sockets.addedPermission(permission.path, permission.uid, permission.permission);
+  sockets.changedPermission(permission.path, permission.uid, permission.permission, "granted");
 });
 
 module.exports = {
@@ -141,18 +141,14 @@ module.exports = {
     return Promise.all(promiseList);
   },
 
-  setPermissions : (path, uid, permList) => {
-    var promiseList = [];
-    permList.forEach(permission => {
-      promiseList.push(module.exports.setPermission(uid, path, permission));
-    });
-    return Promise.all(promiseList);
-  },
-
   //Sets a permission to a drop and its subdrops
   setPermission : (path, uid, permission) => {
     if(permission === "all"){
-      return module.exports.setPermissions(path, uid, ["read", "modify", "write"]);
+      var promiseList = [];
+      ["read", "modify", "write"].forEach(permission => {
+        promiseList.push(module.exports.setPermission(uid, path, permission));
+      });
+      return Promise.all(promiseList);
     }else{
       return drops.getAllWithPath(path)
       .then(dropList => {
@@ -177,5 +173,5 @@ module.exports = {
         return Promise.all(promiseList);
       });
     }
-  },
+  }
 };
