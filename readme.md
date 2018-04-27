@@ -14,13 +14,7 @@
 
 ## Usage
 
-* Download as zip or clone the repo.
-* Locate the zipped executable for your system in the dist folder.
-* Unzip the file.
-* Setup the required configuration in enpuddle.cfg (See Config).
-* Start your local or remote database.
-* Run the server executable.
-* Access your private cloud using the Android application.
+* Unavailable.
 
 ### Config
 
@@ -43,9 +37,9 @@ The configuration for the server is specified in enpuddle.cfg, which should be l
 * **base_dir:** Path relative to executable, where puddles are stored. _(puddles/)_
 * **avatar_dir:** Path relative to executable, where avatars are stored. _(avatars/)_
 
-## HTTP API
+## REST API
 
-The server API is available on:  
+The API is available on:  
 https://documenter.getpostman.com/view/3860887/RVnVDew7
 
 ## Socket.io
